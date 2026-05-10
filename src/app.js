@@ -1,12 +1,20 @@
-const { Component, xml, mount, useRef, onMounted, useState  } = owl;
+/** @typedef {import('@odoo/owl')} */
+
+import { Component, xml, mount, useRef, onMounted, useState } from "@odoo/owl";
 
 class Task extends Component {
   static template = xml`
     <div class="task" t-att-class="props.task.isCompleted ? 'done' : ''">
-      <input type="checkbox" t-att-checked="props.task.isCompleted" />
+      <input type="checkbox" t-att-checked="props.task.isCompleted" t-on-click="toggleTask" />
       <span><t t-esc="props.task.text"/></span>
+      <span class="delete" t-on-click="()=> this.props.onDelete(this.props.task)">🗑</span>
     </div>`;
-  static props = ["task"];
+  static props = ["task", "onDelete"];
+
+  toggleTask() {
+    this.props.task.isCompleted = !this.props.task.isCompleted;
+    console.log(this.props.task);
+  }
 }
 
 class Root extends Component {
@@ -16,7 +24,7 @@ class Root extends Component {
     <input placeholder="Enter a new task" t-on-keyup="addTask" t-ref="add-input"/>
     <div class="task-list">
         <t t-foreach="tasks" t-as="task" t-key="task.id">
-            <Task task="task"/>
+            <Task task="task" onDelete.bind="deleteTask"/>
         </t>
     </div>
 </div>
@@ -24,6 +32,10 @@ class Root extends Component {
 
   nextId = 1;
   tasks = useState([]);
+  deleteTask(task) {
+    const index = this.tasks.findIndex(t => t.id === task.id);
+    this.tasks.splice(index, 1);
+}
 
   setup() {
     const inputRef = useRef("add-input");
@@ -38,7 +50,7 @@ class Root extends Component {
       this.tasks.push({
         id: this.nextId++,
         text: val,
-        isCompleted: false
+        isCompleted: false,
       });
 
       console.log("adding task", this.tasks);
